@@ -8,7 +8,7 @@ But when we use a full node (including pruned) to transact with Bitcoin, our nod
 
 With soverynode, your node can become an economic node and Bitcoin Core can be your portable hot wallet.
 
-Soverynode is written in nodejs and html. Once its running, it creates a secure tunnel between your localhost and the internet with tunnelmole. Scan the QR code, and you will be taken to a GUI wallet of your Bitcoin Core node that makes simple RPC calls. 
+ 
 
 ## How to install
 
