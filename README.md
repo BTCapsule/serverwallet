@@ -25,7 +25,7 @@ cd soverynode
 ```
 
 ```
-node node.js
+sudo node node.js
 ```
 A local webpage will display a QR code and associated link. Follow that link on your mobile browser.
 
