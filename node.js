@@ -18,6 +18,38 @@ const publicIp = require('ip');
 const forge = require('node-forge');
 //const bip32 = BIP32Factory(ecc);
 const os = require('os');
+let testchain_rpc = require('node-bitcoin-rpc');
+
+// Initialize testchain_rpc
+let testchain_host = 'localhost';
+let testchain_user = 'user'; // Replace with actual credentials
+let testchain_pass = 'password'; // Replace with actual credentials
+let testchain_port = 8272;
+
+testchain_rpc.init(testchain_host, testchain_port, testchain_user, testchain_pass);
+testchain_rpc.setTimeout(30000); // 30 seconds
+
+
+
+
+
+
+
+app.get('/testchain/getnewaddress', function (req, res) {
+ testchain_rpc.call('getnewaddress', [], function (err, rpcRes) {
+   if (err) {
+     res.status(500).send({ error: "Test chain error:\n" + err });
+   } else if (typeof rpcRes.result !== 'undefined') {
+     res.send(JSON.stringify({address: rpcRes.result}));
+   } else {
+     res.status(500).send("No error and no result from test chain");
+   }
+ });
+});
+
+
+
+
 
 
 
@@ -26,6 +58,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+
+
+
+function generateRandomNumber() {
+  return Math.floor(Math.random() * 1000000); // Generates a random number between 0 and 999999
+}
+
 
 
 function generateSelfSignedCertificate() {
@@ -69,8 +109,6 @@ function generateSelfSignedCertificate() {
 }
 
 
-
-
 function getPublicIP() {
   return new Promise((resolve, reject) => {
     https.get('https://api.ipify.org', (res) => {
@@ -98,7 +136,7 @@ function getPublicIP() {
 
 let host = 'localhost'
 let user = 'user'
-let pass = 'pass'
+let pass = 'password'
 let network;
 let port;
 
@@ -114,9 +152,24 @@ bitcoin_rpc.init(host, port, user, pass)
 bitcoin_rpc.setTimeout(30000) // 30 seconds
 
 
-app.use(cors());
 
 console.log(network)
+
+
+
+app.get('/listactivesidechains', function (req, res) {
+  bitcoin_rpc.call('listactivesidechains', [], function (err, rpcRes) {
+    if (err) {
+      res.status(500).send({ error: "Error: " + err });
+    } else if (typeof rpcRes.result !== 'undefined') {
+      res.send(JSON.stringify(rpcRes.result));
+    } else {
+      res.status(500).send("No error and no result ?");
+    }
+  });
+});
+
+
 
 
  // Get the list of wallets
@@ -462,7 +515,7 @@ console.log('key imported')
 */
 
 // Serve static files from the current directory
-app.use(express.static(__dirname));
+//app.use(express.static(__dirname));
 
 
 
@@ -484,15 +537,35 @@ const httpsOptions = {
   cert: sslCert.cert
 };
 
+
+const customUrlParam = generateRandomNumber();
+
+
+
+app.use((req, res, next) => {
+  if (req.query.key !== customUrlParam.toString()) {
+    return res.status(403).send('Access Denied');
+  }
+  next();
+});
+
+
+app.use((req, res, next) => {
+  if (req.query.key === customUrlParam.toString()) {
+    express.static(__dirname)(req, res, next);
+  } else {
+    next();
+  }
+});
+
+
 getPublicIP().then((ip) => {
   const port = 443; // Change this to 3001 if you don't have root privileges
   const server = https.createServer(httpsOptions, app);
   server.listen(port, () => {
-    console.log(`HTTPS Server running at https://${ip}:${port}/`);
+    console.log(`HTTPS Server running at https://${ip}:${port}/?key=${customUrlParam}`);
     console.log(`Access this URL on your phone's browser`);
   });
 }).catch((err) => {
   console.error('Error getting public IP:', err);
 });
-
-
