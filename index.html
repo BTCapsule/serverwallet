@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
   <html>
     <meta name="application-name" content="LayerTwoLabs">
     <meta name="msapplication-TileColor" content="#ffffff">
@@ -127,7 +127,7 @@
         margin-right: auto;
       }
 
-      #button-container {
+      button-container {
         display: flex;
         justify-content: center;
       }
@@ -256,6 +256,51 @@ background-color:white;
 height: 500px;
 } 
 
+.sidechain-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.sidechain-list li {
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.sidechain-list li:hover {
+  text-decoration: underline;
+}
+
+.sidechain-input {
+  background-color: black;
+  color: white;
+  font-size: 32px;
+  width: 800px;
+  border: none;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  border-bottom: 1px solid white;
+  margin-top: 20px;
+  display: block;
+}
+
+.sidechain-button {
+  background-color: #ffffff;
+  color: black;
+  padding: 20px 25px;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  font-size: 24px;
+  margin: 20px auto;
+  z-index: 999;
+  margin-bottom: 400px;
+}
+
     </style>
     <body>
       <div id="reader" style="visibility: hidden; width: 100%; height: 100%; position: absolute; top:0;"></div>
@@ -265,8 +310,8 @@ height: 500px;
       <div id="button-container" class="exclude">
         <button id="displayBalance">getbalance</button>
         <button onclick="runRPC('listwallets')">listwallets</button>
-        <button onclick="runRPC('getwalletinfo')">getwalletinfo</button>
-	<button id="createWalletButton">createwallet</button>
+        <button onclick="getTestchainAddress()">address</button>
+	<button onclick="runRPC('listactivesidechains')">sidechains</button>
 	</div>
 
       <div id="balance"></div>
@@ -358,7 +403,22 @@ height: 500px;
 
 
 
-
+function getTestchainAddress() {
+  fetch('/testchain/getnewaddress')
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        console.error('Error:', data.error);
+      } else {
+        document.getElementById("result").innerHTML = `Address: ${data.address}`;
+        document.getElementById('result').style.visibility = 'visible';
+        document.getElementById('result').style.fontSize = '24px';
+      }
+    })
+    .catch(error => {
+      console.error('There was a problem with the fetch operation:', error);
+    });
+}
 
 
        
@@ -404,6 +464,34 @@ height: 500px;
               element.style.visibility = 'hidden';
             }
           }
+
+
+
+
+function selectSidechain(sidechainName) {
+  let resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = `
+    <h3>${sidechainName}</h3>
+    <form id="sidechainForm">
+      <input type="text" id="sidechainAddress" placeholder="Enter address" class="sidechain-input">
+      <input type="number" id="sidechainAmount" placeholder="Enter amount" class="sidechain-input">
+      <button type="submit" id="sidechainSubmit" class="sidechain-button">Submit</button>
+    </form>
+  `;
+
+  document.getElementById('sidechainForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    let address = document.getElementById('sidechainAddress').value;
+    let amount = document.getElementById('sidechainAmount').value;
+    console.log(`Sidechain: ${sidechainName}, Address: ${address}, Amount: ${amount}`);
+    // Here you can add the logic to handle the sidechain transaction
+  });
+}
+
+
+
+
+
 
 
 
@@ -665,6 +753,49 @@ console.log('yeah')
 
 
 
+if (rpcMethod === "listactivesidechains") {
+  let resultDiv = document.getElementById("result");
+
+  hide(['mnemonicContainer', 'create_wallet', 'walletName', 'confirmWalletCreation', 'btcAddress', 'feerate', 'scanButton', 'btc', 'amount', 'confirm'])
+
+  resultDiv.innerHTML = '<h3>CHOOSE A SIDECHAIN:</h3>';                
+  if (Array.isArray(data)) {
+
+
+
+
+    let list = '<ul class="sidechain-list">';
+    data.forEach(sidechain => {
+      if (sidechain.title) {
+        list += `<li onclick="selectSidechain('${sidechain.title}')">${sidechain.title}</li>`;
+      }
+    });
+    list += '</ul>';
+    resultDiv.innerHTML += list;
+  } else {
+    resultDiv.innerHTML += 'Unexpected response format';
+  }
+
+  resultDiv.style.visibility = 'visible';
+  resultDiv.style.fontSize = '60px';
+  let divIdsToShow = ['balance', 'result'];
+  showDivs(divIdsToShow);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if (rpcMethod === "listwallets") {
  let table = '<table class = "center-table" style = "border-collapse: collapse;">'  
 table += '<thead><tr><th>Choose a Wallet</th></tr></thead>';
@@ -817,7 +948,7 @@ for (let key in data) {
 
 
 
-
+/*
 	const createWalletButton = document.getElementById('createWalletButton');
 	const createWalletDiv = document.getElementById('create_wallet');
 	const walletNameInput = document.getElementById('walletName');
@@ -877,7 +1008,7 @@ confirmWalletCreationButton.addEventListener('click', function() {
 
 
 
-
+*/
 
 
 
