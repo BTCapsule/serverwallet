@@ -39,8 +39,7 @@ server=1
 rpcallowip=127.0.0.1
 rpcbind=127.0.0.1:8332
 rpcuser=user
-rpcpassword=pass
-prune=550
+rpcpassword=password
 ```
 
 To edit your conf file, open Bitcoin Core. Choose Settings>Options>Open Configuration File. 
