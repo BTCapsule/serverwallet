@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
   <html>
     <meta name="application-name" content="LayerTwoLabs">
     <meta name="msapplication-TileColor" content="#ffffff">
@@ -410,7 +410,7 @@ function getTestchainAddress() {
       if (data.error) {
         console.error('Error:', data.error);
       } else {
-        document.getElementById("result").innerHTML = `Address: ${data.address}`;
+        document.getElementById("result").innerHTML = `Deposit Address: ${data.address}`;
         document.getElementById('result').style.visibility = 'visible';
         document.getElementById('result').style.fontSize = '24px';
       }
@@ -421,7 +421,13 @@ function getTestchainAddress() {
 }
 
 
-       
+
+
+
+
+
+
+    
          let timer = null; 
          estimateSmartFee()
          runRPC('getbalance') 
