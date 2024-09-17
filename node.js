@@ -18,8 +18,8 @@ const publicIp = require('ip');
 const forge = require('node-forge');
 //const bip32 = BIP32Factory(ecc);
 const os = require('os');
-/*let testchain_rpc = require('node-bitcoin-rpc');
-
+let testchain_rpc = require('node-bitcoin-rpc');
+/*
 // Initialize testchain_rpc
 let testchain_host = '127.0.0.2';
 let testchain_user = 'user'; // Replace with actual credentials
@@ -32,12 +32,28 @@ testchain_rpc.setTimeout(30000); // 30 seconds
 
 */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 let host = 'localhost'
 let user = 'user'
 let pass = 'password'
 let network;
-let port;
-
+//let port;
+/*
 if (process.argv.includes('-testnet')) {
  network = bitcoin.networks.testnet;
  port = 18332;
@@ -48,6 +64,36 @@ if (process.argv.includes('-testnet')) {
 
 bitcoin_rpc.init(host, port, user, pass)
 bitcoin_rpc.setTimeout(30000) // 30 seconds
+
+*/
+
+
+function dynamicRPCCall(rpcType, method, params) {
+  return new Promise((resolve, reject) => {
+    const rpc = rpcType === 'bitcoin' ? bitcoin_rpc : testchain_rpc;
+    const port = rpcType === 'bitcoin' ? 8332 : 8272;
+
+    // Disconnect from current connection (if any)
+    rpc.init('localhost', 0, 'user', 'password');
+
+    // Connect to the appropriate port
+    rpc.init('localhost', port, 'user', 'password');
+    rpc.setTimeout(30000);
+
+    rpc.call(method, params, function(err, response) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(response);
+      }
+    });
+  });
+}
+
+
+
+
+
 
 
 /*
@@ -66,10 +112,10 @@ testchain_rpc.call = function(method, params, callback) {
 
 
 
+*/
 
 
-
-
+/*
 
 app.get('/testchain/getnewaddress', function (req, res) {
   testchain_rpc.call('getdepositaddress', [], function (err, rpcRes) {
@@ -85,6 +131,24 @@ console.log(rpcRes)
 });
 
 */
+
+app.get('/getdepositaddress', function (req, res) {
+  dynamicRPCCall('testchain', 'getdepositaddress', [])
+    .then(rpcRes => {
+      if (typeof rpcRes.result !== 'undefined') {
+        res.send(JSON.stringify(rpcRes.result));
+       console.log(rpcRes.result);
+      } else {
+        res.status(500).send("No error and no result ?");
+      }
+    })
+    .catch(err => {
+      res.status(500).send({ error: "Error: " + err });
+    });
+});
+
+
+
 
 
 app.use(cors({
@@ -215,13 +279,21 @@ app.get('/listactivesidechains', function (req, res) {
 
 
 
-
+app.get('/runrpc/:rpcMethod', function (req, res) {
+  const rpcMethod = req.params.rpcMethod;
+  
+  dynamicRPCCall('bitcoin', rpcMethod, [])
+    .then(rpcRes => {
+      if (typeof rpcRes.result !== 'undefined') {
+        // Your existing logic here
+/*        res.send(JSON.stringify(rpcRes.result));
+    
 app.get('/runrpc/:rpcMethod', function (req, res) {
  const rpcMethod = req.params.rpcMethod;
  bitcoin_rpc.call(rpcMethod, [], function (err, rpcRes) {
   if (err) {
     res.status(500).send({ error: "I have an error :\n" + err });
-  } else if (typeof rpcRes.result !== ' undefined') {
+  } else if (typeof rpcRes.result !== ' undefined') {*/
     if (rpcMethod == 'getblockchaininfo') {
       console.log(rpcRes.result)
     }
@@ -259,12 +331,27 @@ if (rpcMethod === 'listwallets') {
 
 
       res.send(JSON.stringify(rpcRes.result))
-  } else {
+  }   else {
+        res.status(500).send("No error and no result ?");
+      }
+    })
+    .catch(err => {
+      res.status(500).send({ error: "I have an error :\n" + err });
+    });
+});
+
+
+
+
+
+/*
+
+ else {
     res.status(500).send("No error and no result ?");
   }
  });
 });
-
+*/
 
 
 
@@ -563,17 +650,22 @@ app.use((req, res, next) => {
   const isTestchainPage = req.path === '/testchain/testchain.html';
   const providedKey = req.query.key;
 
-  if (providedKey === customUrlParam.toString() || (isTestchainPage && providedKey === customUrlParam.toString())) {
+  if (providedKey === customUrlParam.toString()  || (isTestchainPage && providedKey === customUrlParam.toString())
+) {
     next();
   } else {
     return res.status(403).send('Access Denied');
   }
 });
-
+/*
 app.get('/testchain/testchain.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'testchain', 'testchain.html'));
 });
+*/
 
+
+
+/*
 app.use((req, res, next) => {
   if (req.query.key === customUrlParam.toString()) {
     express.static(__dirname)(req, res, next);
@@ -581,14 +673,22 @@ app.use((req, res, next) => {
     next();
   }
 });
-
+*/
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
-
+/*
 app.get('/testchain', (req, res) => {
   res.sendFile(path.join(__dirname, 'testchain', 'testchain.html'));
 });
+*/
+app.get('/testchain.html', (req, res) => {
+  const filePath = path.join(__dirname, 'testchain.html');
+  console.log('Attempting to serve file:', filePath);
+  res.sendFile(filePath);
+});
+
+
 // Proxy requests to /testchain to the testchain application
 app.use('/testchain', createProxyMiddleware({ 
   target: 'http://localhost:3001', 
@@ -619,15 +719,4 @@ getPublicIP().then((ip) => {
 
 
 // Add this line to serve static files from the Thunder folder
-app.use('/thunder', express.static(path.join(__dirname, 'thunder')));
-
-getPublicIP().then((ip) => {
-  const port = 443; // Change this to 3001 if you don't have root privileges
-  const server = https.createServer(httpsOptions, app);
-  server.listen(port, () => {
-    console.log(`HTTPS Server running at https://${ip}:${port}/?key=${customUrlParam}`);
-    console.log(`Access this URL on your phone's browser`);
-  });
-}).catch((err) => {
-  console.error('Error getting public IP:', err);
-});
+//app.use('/thunder', express.static(path.join(__dirname, 'thunder')));
