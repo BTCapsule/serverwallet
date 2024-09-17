@@ -11,17 +11,17 @@ const tunnelmole = require('tunnelmole/cjs');
 //const ecc = require('tiny-secp256k1');
 //const { BIP32Factory } = require('bip32');
 const bitcoin = require('bitcoinjs-lib');
-
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const https = require('https');
 const crypto = require('crypto');
 const publicIp = require('ip');
 const forge = require('node-forge');
 //const bip32 = BIP32Factory(ecc);
 const os = require('os');
-let testchain_rpc = require('node-bitcoin-rpc');
+/*let testchain_rpc = require('node-bitcoin-rpc');
 
 // Initialize testchain_rpc
-let testchain_host = 'localhost';
+let testchain_host = '127.0.0.2';
 let testchain_user = 'user'; // Replace with actual credentials
 let testchain_pass = 'password'; // Replace with actual credentials
 let testchain_port = 8272;
@@ -30,27 +30,61 @@ testchain_rpc.init(testchain_host, testchain_port, testchain_user, testchain_pas
 testchain_rpc.setTimeout(30000); // 30 seconds
 
 
+*/
+
+let host = 'localhost'
+let user = 'user'
+let pass = 'password'
+let network;
+let port;
+
+if (process.argv.includes('-testnet')) {
+ network = bitcoin.networks.testnet;
+ port = 18332;
+} else {
+ network = bitcoin.networks.bitcoin;
+ port = 8332;
+}
+
+bitcoin_rpc.init(host, port, user, pass)
+bitcoin_rpc.setTimeout(30000) // 30 seconds
+
+
+/*
+
+// Store the original call method
+const originalCall = testchain_rpc.call;
+
+// Override the call method with a new function that logs the parameters
+testchain_rpc.call = function(method, params, callback) {
+  console.log('RPC call:', method);
+  console.log('Parameters:', JSON.stringify(params, null, 2));
+  
+  // Call the original method
+  return originalCall.call(this, method, params, callback);
+};
+
+
+
 
 
 
 
 
 app.get('/testchain/getnewaddress', function (req, res) {
- testchain_rpc.call('getnewaddress', [], function (err, rpcRes) {
-   if (err) {
-     res.status(500).send({ error: "Test chain error:\n" + err });
-   } else if (typeof rpcRes.result !== 'undefined') {
-     res.send(JSON.stringify({address: rpcRes.result}));
-   } else {
-     res.status(500).send("No error and no result from test chain");
-   }
- });
+  testchain_rpc.call('getdepositaddress', [], function (err, rpcRes) {
+console.log(rpcRes)
+    if (err) {
+      res.status(500).send({ error: "Test chain error:\n" + err });
+    } else if (typeof rpcRes.result !== 'undefined') {
+      res.send(JSON.stringify({address: rpcRes.result}));
+    } else {
+      res.status(500).send("No error and no result from test chain");
+    }
+  });
 });
 
-
-
-
-
+*/
 
 
 app.use(cors({
@@ -131,25 +165,6 @@ function getPublicIP() {
 
 
 
-
-
-
-let host = 'localhost'
-let user = 'user'
-let pass = 'password'
-let network;
-let port;
-
-if (process.argv.includes('-testnet')) {
- network = bitcoin.networks.testnet;
- port = 18332;
-} else {
- network = bitcoin.networks.bitcoin;
- port = 8332;
-}
-
-bitcoin_rpc.init(host, port, user, pass)
-bitcoin_rpc.setTimeout(30000) // 30 seconds
 
 
 
@@ -538,17 +553,26 @@ const httpsOptions = {
 };
 
 
+
+
+
 const customUrlParam = generateRandomNumber();
-
-
+fs.writeFileSync('param.txt', customUrlParam.toString(), 'utf8');
 
 app.use((req, res, next) => {
-  if (req.query.key !== customUrlParam.toString()) {
+  const isTestchainPage = req.path === '/testchain/testchain.html';
+  const providedKey = req.query.key;
+
+  if (providedKey === customUrlParam.toString() || (isTestchainPage && providedKey === customUrlParam.toString())) {
+    next();
+  } else {
     return res.status(403).send('Access Denied');
   }
-  next();
 });
 
+app.get('/testchain/testchain.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'testchain', 'testchain.html'));
+});
 
 app.use((req, res, next) => {
   if (req.query.key === customUrlParam.toString()) {
@@ -558,6 +582,44 @@ app.use((req, res, next) => {
   }
 });
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/testchain', (req, res) => {
+  res.sendFile(path.join(__dirname, 'testchain', 'testchain.html'));
+});
+// Proxy requests to /testchain to the testchain application
+app.use('/testchain', createProxyMiddleware({ 
+  target: 'http://localhost:3001', 
+  changeOrigin: true,
+  pathRewrite: {'^/testchain/api' : ''}
+}));
+
+// Your existing route handlers...
+
+// Start the testchain application
+const testchainApp = require('./testchain/testchain');
+testchainApp.listen(3001, () => {
+  console.log('Testchain app listening on port 3001');
+});
+
+// Start the main server
+getPublicIP().then((ip) => {
+  const port = 443; // or 3000 if not running as root
+  const server = https.createServer(httpsOptions, app);
+  server.listen(port, () => {
+    console.log(`HTTPS Server running at https://${ip}:${port}/?key=${customUrlParam}`);
+    console.log(`Access this URL on your phone's browser`);
+  });
+}).catch((err) => {
+  console.error('Error getting public IP:', err);
+});
+
+
+
+// Add this line to serve static files from the Thunder folder
+app.use('/thunder', express.static(path.join(__dirname, 'thunder')));
 
 getPublicIP().then((ip) => {
   const port = 443; // Change this to 3001 if you don't have root privileges
