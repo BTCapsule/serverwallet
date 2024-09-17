@@ -401,7 +401,7 @@ height: 500px;
         <script>
 
 function getTestchainAddress() {
-  fetch('/testchain/api/getnewaddress')
+  fetch('/api/getdepositaddress')
     .then(response => response.json())
     .then(data => {
       if (data.error) {
@@ -714,7 +714,7 @@ console.log('yeah')
 		 if (args && args.length > 0) {
 		  argsString = args.join('/');
 		 }
-            fetch(`/testchain/api/${rpcMethod}/${argsString}`).then(response => response.json()).then(data => {
+            fetch(`/api/runrpc/${rpcMethod}/${argsString}`).then(response => response.json()).then(data => {
               if (rpcMethod === 'getbalance') {
                 confirmedBalance = data;
               } else if (rpcMethod === 'getunconfirmedbalance') {
@@ -902,7 +902,7 @@ for (let key in data) {
           }
 
 	function sendToAddress(address, amount) {
-	 fetch(`testchain/api/sendtoaddress/${address}/${amount}`).then(response => response.json()).then(data => {
+	 fetch(`api/sendtoaddress/${address}/${amount}`).then(response => response.json()).then(data => {
 	  if (data.error) {
 	    console.error('Error:', data.error);
 	  } else {
@@ -913,7 +913,7 @@ for (let key in data) {
 
        
 	function loadWallet(wallet) {
-	 fetch(`testchain/api/loadwallet/${wallet}`).then(response => response.json()).then(data => {
+	 fetch(`api/loadwallet/${wallet}`).then(response => response.json()).then(data => {
 	  if (data.error) {
 	    console.error('Error:', data.error);
 	  } else {
@@ -925,7 +925,7 @@ for (let key in data) {
        
 
 	function estimateSmartFee() {
-	 fetch(`testchain/api/estimatesmartfee`)
+	 fetch(`api/estimatesmartfee`)
 	   .then(response => {
 	     if (!response.ok) {
 	       throw new Error(`HTTP error: ${response.status}`);
@@ -973,7 +973,7 @@ confirmWalletCreationButton.addEventListener('click', function() {
  const params = [walletName];
 
  // Make the RPC call
- fetch(`testchain/api/createwallet/${walletName}`)
+ fetch(`api/createwallet/${walletName}`)
  .then(response => response.json())
  .then(data => {
  
@@ -1018,7 +1018,7 @@ confirmWalletCreationButton.addEventListener('click', function() {
 
 
 function getAddress() {
-fetch(`testchain/api/getnewaddress`)
+fetch(`api/getnewaddress`)
  .then(response => {
    if (!response.ok) {
      throw new Error(`HTTP error: ${response.status}`);
