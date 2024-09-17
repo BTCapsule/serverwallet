@@ -1,4 +1,0 @@
-cryptography
-farm
-not
-wallet.dat
