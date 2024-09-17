@@ -101,7 +101,7 @@ function getPublicIP() {
 
 
 
-
+/*
 let host = '127.0.0.1'
 let user = 'user'
 let pass = 'password'
@@ -118,10 +118,36 @@ if (process.argv.includes('-testnet')) {
 
 testchain_rpc.init(host, port, user, pass)
 testchain_rpc.setTimeout(30000) // 30 seconds
+*/
 
 
 
-app.get('/getnewaddress', function (req, res) {
+function dynamicRPCCall(rpcType, method, params) {
+  return new Promise((resolve, reject) => {
+    const rpc = rpcType === 'bitcoin' ? bitcoin_rpc : testchain_rpc;
+    const port = rpcType === 'bitcoin' ? 8332 : 8272;
+
+    // Disconnect from current connection (if any)
+    rpc.init('localhost', 0, 'user', 'password');
+
+    // Connect to the appropriate port
+    rpc.init('localhost', port, 'user', 'password');
+    rpc.setTimeout(30000);
+
+    rpc.call(method, params, function(err, response) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(response);
+      }
+    });
+  });
+}
+
+
+
+
+app.get('/api/getdepositaddress', function (req, res) {
   testchain_rpc.call('getdepositaddress', [], function (err, rpcRes) {
 console.log(rpcRes)
     if (err) {
@@ -141,11 +167,11 @@ console.log(rpcRes)
 
 
 
-console.log(network)
 
 
 
-app.get('/listactivesidechains', function (req, res) {
+
+app.get('/api/listactivesidechains', function (req, res) {
   testchain_rpc.call('listactivesidechains', [], function (err, rpcRes) {
     if (err) {
       res.status(500).send({ error: "Error: " + err });
@@ -188,8 +214,8 @@ app.get('/listactivesidechains', function (req, res) {
 
 
 
-
-app.get('/runrpc/:rpcMethod', function (req, res) {
+/*
+app.get('/api/runrpc/:rpcMethod', function (req, res) {
  const rpcMethod = req.params.rpcMethod;
  testchain_rpc.call(rpcMethod, [], function (err, rpcRes) {
   if (err) {
@@ -238,13 +264,77 @@ if (rpcMethod === 'listwallets') {
  });
 });
 
+*/
+
+
+
+
+app.get('api/runrpc/:rpcMethod', function (req, res) {
+  const rpcMethod = req.params.rpcMethod;
+  
+  dynamicRPCCall('testchain', rpcMethod, [])
+    .then(rpcRes => {
+      if (typeof rpcRes.result !== 'undefined') {
+        // Your existing logic here
+/*        res.send(JSON.stringify(rpcRes.result));
+    
+app.get('/runrpc/:rpcMethod', function (req, res) {
+ const rpcMethod = req.params.rpcMethod;
+ bitcoin_rpc.call(rpcMethod, [], function (err, rpcRes) {
+  if (err) {
+    res.status(500).send({ error: "I have an error :\n" + err });
+  } else if (typeof rpcRes.result !== ' undefined') {*/
+    if (rpcMethod == 'getblockchaininfo') {
+      console.log(rpcRes.result)
+    }
+    if (rpcMethod == 'getwalletinfo'){
+      console.log(rpcRes.result)
+     }
+
+
+
+
+if (rpcMethod === 'listwallets') {
+ const allWallets = rpcRes.result;
+
+ // Check if the 'wallets.txt' file exists
+ if (fs.existsSync('wallets.txt')) {
+ // If the file exists, read its contents
+ const existingWallets = fs.readFileSync('wallets.txt', 'utf8').split('\n');
+
+ // Check if the new wallet names are already in the file
+ const newWallets = allWallets.filter(wallet => !existingWallets.includes(wallet));
+
+ // If there are new wallet names, write them to the file
+ if (newWallets.length > 0) {
+  const combinedWallets = [...existingWallets, ...newWallets];
+  fs.writeFileSync('wallets.txt', combinedWallets.join('\n'));
+  console.log('New wallet names saved to wallets.txt');
+ }
+ } else {
+ // If the file does not exist, write the new wallet names to the file
+ fs.writeFileSync('wallets.txt', allWallets.join('\n'));
+ console.log('Wallet names saved to wallets.txt');
+ }
+}
+
+
+
+      res.send(JSON.stringify(rpcRes.result))
+  }   else {
+        res.status(500).send("No error and no result ?");
+      }
+    })
+    .catch(err => {
+      res.status(500).send({ error: "I have an error :\n" + err });
+    });
+});
 
 
 
 
 
-
-app.get('/sendtoaddress/:address/:amount', function (req, res) {
+app.get('/api/sendtoaddress/:address/:amount', function (req, res) {
  const address = req.params.address;
  const amount = req.params.amount;
  const params = [address, amount, '', '', false, true, 6,'economical'];
@@ -270,7 +360,7 @@ app.get('/sendtoaddress/:address/:amount', function (req, res) {
 
 
 
-app.get('/loadwallet/:wallet', function (req, res) {
+app.get('/api/loadwallet/:wallet', function (req, res) {
  const wallet = req.params.wallet;
  const params = [wallet];
 
@@ -532,16 +622,16 @@ const httpsOptions = {
 
 
 // Serve static files from the testchain directory
-app.use(express.static(__dirname));
+//app.use('/testchain', express.static(path.join(__dirname, 'testchain')));
 
 // Serve testchain.html
-app.get('/', (req, res) => {
+app.get('/testchain/testchain.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'testchain.html'));
 });
 
 // Your testchain-specific routes and logic here...
 
-module.exports = app;
+//module.exports = app;
 
 
 
@@ -580,10 +670,11 @@ getPublicIP().then((ip) => {
   const port = 443; // Change this to 3001 if you don't have root privileges
   const server = https.createServer(httpsOptions, app);
   server.listen(port, () => {
-    console.log(`HTTPS Server running at https://${ip}:${port}/?key=${customUrlParam}`);
+    console.log(`HTTPS Server running at https://${ip}:${port}/testchain/testchain.html`);
     console.log(`Access this URL on your phone's browser`);
   });
 }).catch((err) => {
   console.error('Error getting public IP:', err);
 });
 */
+module.exports = app;
