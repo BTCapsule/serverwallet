@@ -15,7 +15,7 @@
     <style>
       body {
         color: white;
-        background: black;
+        background: purple;
       }
 
       h2 {
@@ -400,11 +400,8 @@ height: 500px;
         <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
         <script>
 
-
-
-
 function getTestchainAddress() {
-  fetch('/testchain/getnewaddress')
+  fetch('/api/getdepositaddress')
     .then(response => response.json())
     .then(data => {
       if (data.error) {
@@ -427,7 +424,8 @@ function getTestchainAddress() {
 
 
 
-    
+
+       
          let timer = null; 
          estimateSmartFee()
          runRPC('getbalance') 
@@ -716,7 +714,7 @@ console.log('yeah')
 		 if (args && args.length > 0) {
 		  argsString = args.join('/');
 		 }
-            fetch(`/runrpc/${rpcMethod}/${argsString}`).then(response => response.json()).then(data => {
+            fetch(`/api/runrpc/${rpcMethod}/${argsString}`).then(response => response.json()).then(data => {
               if (rpcMethod === 'getbalance') {
                 confirmedBalance = data;
               } else if (rpcMethod === 'getunconfirmedbalance') {
@@ -904,7 +902,7 @@ for (let key in data) {
           }
 
 	function sendToAddress(address, amount) {
-	 fetch(`/sendtoaddress/${address}/${amount}`).then(response => response.json()).then(data => {
+	 fetch(`api/sendtoaddress/${address}/${amount}`).then(response => response.json()).then(data => {
 	  if (data.error) {
 	    console.error('Error:', data.error);
 	  } else {
@@ -915,7 +913,7 @@ for (let key in data) {
 
        
 	function loadWallet(wallet) {
-	 fetch(`/loadwallet/${wallet}`).then(response => response.json()).then(data => {
+	 fetch(`api/loadwallet/${wallet}`).then(response => response.json()).then(data => {
 	  if (data.error) {
 	    console.error('Error:', data.error);
 	  } else {
@@ -927,7 +925,7 @@ for (let key in data) {
        
 
 	function estimateSmartFee() {
-	 fetch(`/estimatesmartfee`)
+	 fetch(`api/estimatesmartfee`)
 	   .then(response => {
 	     if (!response.ok) {
 	       throw new Error(`HTTP error: ${response.status}`);
@@ -954,7 +952,7 @@ for (let key in data) {
 
 
 
-/*
+
 	const createWalletButton = document.getElementById('createWalletButton');
 	const createWalletDiv = document.getElementById('create_wallet');
 	const walletNameInput = document.getElementById('walletName');
@@ -975,7 +973,7 @@ confirmWalletCreationButton.addEventListener('click', function() {
  const params = [walletName];
 
  // Make the RPC call
- fetch(`/createwallet/${walletName}`)
+ fetch(`api/createwallet/${walletName}`)
  .then(response => response.json())
  .then(data => {
  
@@ -1014,13 +1012,13 @@ confirmWalletCreationButton.addEventListener('click', function() {
 
 
 
-*/
+
 
 
 
 
 function getAddress() {
-fetch(`/getnewaddress`)
+fetch(`api/getnewaddress`)
  .then(response => {
    if (!response.ok) {
      throw new Error(`HTTP error: ${response.status}`);
